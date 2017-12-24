@@ -84,8 +84,8 @@ namespace TearableCloth
         private float py;
         private float vx;
         private float vy;
-        public float pinX;
-        public float pinY;
+
+        public Point pinAt;
 
         private List<Constraint> constraints;
         private ClothScript clothData;
@@ -98,29 +98,33 @@ namespace TearableCloth
             this.py = y;
             vx = 0;
             vy = 0;
-            pinX = 0;
-            pinY = 0;
+            pinAt = null;
             this.clothData = clothData;
             constraints = new List<Constraint>();
         }
 
         public Point update(float delta)
         {
-            if (this.pinX != 0 && this.pinY != 0) return this;
+            if (this.pinAt != null)
+            {
+//                Debug.Log("pinned points");
+                return this;
+            }
 
+
+//            Debug.Log(clothData.mouse.down);
             if (clothData.mouse.down)
             {
-                var dx = this.x - clothData.mouse.x;
-                var dy = this.y - clothData.mouse.y;
+                var distance = Vector3.Distance(clothData.transform.position + new Vector3(x, y, 0),
+                    Camera.main.ScreenToWorldPoint(new Vector3(clothData.mouse.x, clothData.mouse.y)));
 
-                var dist = Mathf.Sqrt(dx * dx + dy * dy);
 
-                if (dist < clothData.mouse.influence)
+                if (distance < clothData.mouse.influence)
                 {
                     this.px = this.x - (clothData.mouse.x - clothData.mouse.px);
                     this.py = this.y - (clothData.mouse.y - clothData.mouse.py);
                 }
-                else if (dist < clothData.mouse.cut)
+                else if (distance < clothData.mouse.cut)
                 {
                     this.constraints = new List<Constraint>();
                 }
@@ -168,10 +172,10 @@ namespace TearableCloth
 
         public void resolve()
         {
-            if (this.pinX != 0 && this.pinY != 0)
+            if (this.pinAt != null)
             {
-                this.x = this.pinX;
-                this.y = this.pinY;
+                this.x = this.pinAt.x;
+                this.y = this.pinAt.y;
                 return;
             }
 
@@ -200,8 +204,7 @@ namespace TearableCloth
 
         public void pin(float pinX, float pinY)
         {
-            this.pinX = pinX;
-            this.pinY = pinY;
+            this.pinAt = new Point(pinX, pinY, null);
         }
     }
 
@@ -238,25 +241,18 @@ namespace TearableCloth
             var px = dx * mul;
             var py = dy * mul;
 
-            if (this.p1.pinX == 0)
+            if (this.p1.pinAt == null)
             {
                 this.p1.x += px;
-            }
-
-            if (this.p1.pinY == 0)
-            {
                 this.p1.y += py;
             }
 
-            if (this.p2.pinX == 0)
+            if (this.p2.pinAt == null)
             {
-                this.p2.x += px;
+                this.p2.x -= px;
+                this.p2.y -= py;
             }
 
-            if (this.p2.pinY == 0)
-            {
-                this.p2.y += py;
-            }
 
             return this;
         }
