@@ -94,10 +94,13 @@ namespace TearableCloth
             {
                 RaycastHit raycastHit = hits[0];
 
-                var n = Vector3.ProjectOnPlane(dir, raycastHit.normal);
+                var n = Vector3.Reflect(dir, raycastHit.normal);
+                // var n = dir + raycastHit.normal;
                 dx = n.x;
                 dy = n.y;
                 dz = n.z;
+
+                // dx = dy = dz = 0;
             }
 
             var nx = this.x + dx;
