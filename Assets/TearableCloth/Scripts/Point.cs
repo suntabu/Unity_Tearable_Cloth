@@ -20,11 +20,13 @@ namespace TearableCloth
         private List<Constraint> constraints;
         private ClothScript clothScript;
 
+        private float pinX, pinY, pinZ;
+
         public Point(float x, float y, float z, ClothScript clothScript)
         {
-            this.x = x;
-            this.y = y;
-            this.z = z;
+            this.x = pinX = x;
+            this.y = pinY = y;
+            this.z = pinZ = z;
             this.px = x;
             this.py = y;
             this.pz = z;
@@ -39,7 +41,7 @@ namespace TearableCloth
 
         public override string ToString()
         {
-            return $"({x},{y},{z}) CONSTRAIN: {constraints.Count}";
+            return $"({x},{y},{z}) Constraint:{constraints.Count}";
         }
 
         private RaycastHit[] hits;
@@ -48,11 +50,18 @@ namespace TearableCloth
         {
             if (this.isPinAt)
             {
+                var v = new Vector3(pinX, pinY, pinZ);
+                v = clothScript.transform.TransformPoint(v);
+                x = v.x;
+                y = v.y;
+                z = v.z;
                 return this;
             }
 
-            var worldPos = clothScript.transform.localToWorldMatrix.MultiplyPoint3x4(this);
+            // var worldPos =  clothScript.transform.TransformPoint(this);
             // Debug.Log(this + "  ->  " + worldPos);
+
+            var worldPos = (this);
             if (clothScript.mouse.down)
             {
                 var distance = Vector2.Distance(worldPos,
@@ -188,6 +197,11 @@ namespace TearableCloth
         public static implicit operator Vector4(Point t)
         {
             return new Vector4(t.x, t.y, t.z);
+        }
+
+        public static implicit operator Vector2(Point t)
+        {
+            return new Vector2(t.x, t.y);
         }
     }
 

@@ -60,15 +60,16 @@ public class ClothScript : MonoBehaviour
     [Serializable]
     public class MouseInfo
     {
+        public float influence;
+        public float cut;
+        public bool isEnable = true;
+
         [HideInInspector] public float x;
         [HideInInspector] public float y;
-        public float influence;
         [HideInInspector] public float px;
         [HideInInspector] public float py;
-        public float cut;
         [HideInInspector] public bool down;
 
-        public bool isEnable = true;
 
         public void Update()
         {
