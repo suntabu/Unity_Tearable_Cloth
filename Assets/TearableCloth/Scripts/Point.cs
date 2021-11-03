@@ -94,7 +94,8 @@ namespace TearableCloth
             {
                 RaycastHit raycastHit = hits[0];
 
-                var n = Vector3.Reflect(dir, raycastHit.normal);
+                //TODO: 快速收敛
+                var n = Vector3.Reflect(dir, raycastHit.normal) * l;
                 // var n = dir + raycastHit.normal;
                 dx = n.x;
                 dy = n.y;

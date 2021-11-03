@@ -62,7 +62,7 @@ public class ClothScript : MonoBehaviour
     {
         public float influence;
         public float cut;
-        public bool isEnable = true;
+        public bool isEnable;
 
         [HideInInspector] public float x;
         [HideInInspector] public float y;
