@@ -9,6 +9,8 @@ namespace TearableCloth
         public float y;
         public float z;
 
+        public float mass;
+
         private float px;
         private float py;
         private float pz;
@@ -27,15 +29,16 @@ namespace TearableCloth
             this.x = pinX = x;
             this.y = pinY = y;
             this.z = pinZ = z;
-            this.px = x;
-            this.py = y;
-            this.pz = z;
+            px = x;
+            py = y;
+            pz = z;
             vx = 0;
             vy = 0;
             vz = 0;
             this.clothScript = clothScript;
             constraints = new List<Constraint>();
             hits = new RaycastHit[1];
+            colliders = new Collider[1];
             isPinAt = false;
         }
 
@@ -45,10 +48,11 @@ namespace TearableCloth
         }
 
         private RaycastHit[] hits;
+        private Collider[] colliders;
 
         public Point Update(float delta, float force, float particleSize)
         {
-            if (this.isPinAt)
+            if (isPinAt)
             {
                 var v = new Vector3(pinX, pinY, pinZ);
                 v = clothScript.transform.TransformPoint(v);
@@ -58,8 +62,6 @@ namespace TearableCloth
                 return this;
             }
 
-            // var worldPos =  clothScript.transform.TransformPoint(this);
-            // Debug.Log(this + "  ->  " + worldPos);
 
             var worldPos = (this);
             if (clothScript.mouse.down)
@@ -70,88 +72,104 @@ namespace TearableCloth
 
                 if (distance < clothScript.mouse.influence)
                 {
-                    this.px = this.x - (clothScript.mouse.x - clothScript.mouse.px);
-                    this.py = this.y - (clothScript.mouse.y - clothScript.mouse.py);
-                    this.pz = this.z - force;
+                    px = x - (clothScript.mouse.x - clothScript.mouse.px);
+                    py = y - (clothScript.mouse.y - clothScript.mouse.py);
+                    pz = z - force;
                 }
                 else if (distance < clothScript.mouse.cut)
                 {
-                    this.constraints = new List<Constraint>();
+                    constraints = new List<Constraint>();
                 }
             }
 
-            this.AddForce(0, clothScript.gravity, 0);
+            AddForce(0, clothScript.gravity, 0);
 
-            var dx = (this.x - this.px) * clothScript.friction + this.vx * delta;
-            var dy = (this.y - this.py) * clothScript.friction + this.vy * delta;
-            var dz = (this.z - this.pz) * clothScript.friction + this.vz * delta;
+            var dx = (x - px) * clothScript.friction + vx * delta;
+            var dy = (y - py) * clothScript.friction + vy * delta;
+            var dz = (z - pz) * clothScript.friction + vz * delta;
 
             var dir = new Vector3(dx, dy, dz);
             var l = dir.magnitude;
-            dir *= 1f / l;
-            if (Physics.SphereCastNonAlloc(worldPos, particleSize,
-                dir, hits, l) > 0)
+            var dirNormal = dir * (1f / l);
+
+
+            if (Physics.OverlapSphereNonAlloc(worldPos, particleSize, colliders) > 0)
             {
-                RaycastHit raycastHit = hits[0];
+                var c = colliders[0];
+                var p = c.ClosestPoint(worldPos);
+                var n = (p - worldPos);
+                dir += n - n.normalized * particleSize;
 
-                //TODO: 快速收敛
-                var n = Vector3.Reflect(dir, raycastHit.normal) * l;
-                // var n = dir + raycastHit.normal;
-                dx = n.x;
-                dy = n.y;
-                dz = n.z;
+                dx = dir.x;
+                dy = dir.y;
+                dz = dir.z;
+            }
+            else
+            {
+                if (Physics.SphereCastNonAlloc(worldPos, particleSize,
+                    dirNormal, hits, l) > 0)
+                {
+                    RaycastHit raycastHit = hits[0];
 
-                // dx = dy = dz = 0;
+                    // var n = Vector3.Reflect(dir, raycastHit.normal) * l;
+                    var n = Vector3.ProjectOnPlane(dir, raycastHit.normal) - Vector3.Project(dir, raycastHit.normal);
+                    // var n = dir + raycastHit.normal;
+
+                    dx = n.x;
+                    dy = n.y;
+                    dz = n.z;
+                    // dx = dy = dz = 0;
+                }
             }
 
-            var nx = this.x + dx;
-            var ny = this.y + dy;
-            var nz = this.z + dz;
 
-            this.px = this.x;
-            this.py = this.y;
-            this.pz = this.z;
+            var nx = x + dx;
+            var ny = y + dy;
+            var nz = z + dz;
 
-            this.x = nx;
-            this.y = ny;
-            this.z = nz;
+            px = x;
+            py = y;
+            pz = z;
 
-            this.vy = this.vx = this.vz = 0;
+            x = nx;
+            y = ny;
+            z = nz;
+
+            vy = vx = vz = 0;
 
 
-            if (this.x >= clothScript.width)
+            if (x >= clothScript.width)
             {
-                this.px = clothScript.width + (clothScript.width - this.px) * clothScript.bounce;
-                this.x = clothScript.width;
+                px = clothScript.width + (clothScript.width - px) * clothScript.bounce;
+                x = clothScript.width;
             }
-            else if (this.x <= -clothScript.width)
+            else if (x <= -clothScript.width)
             {
-                this.px *= -1 * clothScript.bounce;
-                this.x = -clothScript.width;
-            }
-
-            if (this.y >= clothScript.height)
-            {
-                this.py = clothScript.height + (clothScript.height - this.py) * clothScript.bounce;
-                this.y = clothScript.height;
-            }
-            else if (this.y <= -clothScript.height)
-            {
-                this.py *= -1 * clothScript.bounce;
-                this.y = -clothScript.height;
+                px *= -1 * clothScript.bounce;
+                x = -clothScript.width;
             }
 
-            if (this.z >= clothScript.height)
+            if (y >= clothScript.height)
             {
-                this.pz = clothScript.height + (clothScript.height - this.pz) * clothScript.bounce;
-                this.z = clothScript.height;
+                py = clothScript.height + (clothScript.height - py) * clothScript.bounce;
+                y = clothScript.height;
             }
-            else if (this.z <= -clothScript.height)
+            else if (y <= -clothScript.height)
             {
-                this.pz *= -1 * clothScript.bounce;
-                this.z = -clothScript.height;
+                py *= -1 * clothScript.bounce;
+                y = -clothScript.height;
             }
 
+            if (z >= clothScript.height)
+            {
+                pz = clothScript.height + (clothScript.height - pz) * clothScript.bounce;
+                z = clothScript.height;
+            }
+            else if (z <= -clothScript.height)
+            {
+                pz *= -1 * clothScript.bounce;
+                z = -clothScript.height;
+            }
 
             return this;
         }
@@ -159,33 +177,33 @@ namespace TearableCloth
 
         public void Resolve()
         {
-            if (this.isPinAt)
+            if (isPinAt)
             {
                 return;
             }
 
-            for (var index = 0; index < this.constraints.Count; index++)
+            for (var index = 0; index < constraints.Count; index++)
             {
-                var constraint = this.constraints[index];
+                var constraint = constraints[index];
                 constraint.Resolve();
             }
         }
 
         public void Attach(Point point)
         {
-            this.constraints.Add(new Constraint(this, point, clothScript));
+            constraints.Add(new Constraint(this, point, clothScript));
         }
 
         public void Free(Constraint constraint)
         {
-            constraints.RemoveAt(this.constraints.IndexOf(constraint));
+            constraints.RemoveAt(constraints.IndexOf(constraint));
         }
 
         void AddForce(float x, float y, float z)
         {
-            this.vx += x;
-            this.vy += y;
-            this.vz += z;
+            vx += x;
+            vy += y;
+            vz += z;
         }
 
         public void Pin()
@@ -220,41 +238,41 @@ namespace TearableCloth
         {
             this.p1 = p1;
             this.p2 = p2;
-            this.length = clothScript.spacing;
+            length = clothScript.spacing;
             this.clothScript = clothScript;
         }
 
         public Constraint Resolve()
         {
-            var dx = this.p1.x - this.p2.x;
-            var dy = this.p1.y - this.p2.y;
-            var dz = this.p1.z - this.p2.z;
+            var dx = p1.x - p2.x;
+            var dy = p1.y - p2.y;
+            var dz = p1.z - p2.z;
             var dist = Mathf.Sqrt(dx * dx + dy * dy + dz * dz);
 
-            if (dist < this.length) return this;
+            if (dist < length) return this;
 
-            var diff = (this.length - dist) / dist;
+            var diff = (length - dist) / dist;
 
-            if (dist > clothScript.tearDist) this.p1.Free(this);
+            if (dist > clothScript.tearDist) p1.Free(this);
 
-            var mul = diff * 0.5f * (1 - this.length / dist);
+            var mul = diff * 0.15f * (1 - length / dist);
 
             var px = dx * mul;
             var py = dy * mul;
             var pz = dz * mul;
 
-            if (!this.p1.isPinAt)
+            if (!p1.isPinAt)
             {
-                this.p1.x += px;
-                this.p1.y += py;
-                this.p1.z += pz;
+                p1.x += px;
+                p1.y += py;
+                p1.z += pz;
             }
 
-            if (!this.p2.isPinAt)
+            if (!p2.isPinAt)
             {
-                this.p2.x -= px;
-                this.p2.y -= py;
-                this.p2.z -= pz;
+                p2.x -= px;
+                p2.y -= py;
+                p2.z -= pz;
             }
 
             return this;

@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.InteropServices;
-using UnityEditor;
 using UnityEngine;
-
+using Cloth = TearableCloth.Cloth;
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
@@ -26,7 +21,7 @@ public class ClothScript : MonoBehaviour
     [HideInInspector] public Mesh mesh;
     public MouseInfo mouse;
 
-    private TearableCloth.Cloth cloth;
+    private Cloth cloth;
     public float width = 800;
     public float height = 1260;
 
@@ -39,7 +34,7 @@ public class ClothScript : MonoBehaviour
         };
 
         mesh = GetComponent<MeshFilter>().mesh;
-        cloth = new TearableCloth.Cloth(this);
+        cloth = new Cloth(this);
     }
 
     private void Update()
