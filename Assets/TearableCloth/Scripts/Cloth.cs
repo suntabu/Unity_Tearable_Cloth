@@ -34,18 +34,29 @@ namespace TearableCloth
             {
                 for (var x = 0; x <= clothScript.clothX; x++)
                 {
-                    var v = new Vector3(startX + x * clothScript.spacing, 0, -y * clothScript.spacing);
-                    var point = new Point(v.x, v.y, v.z, clothScript);
+                    var v = new Vector3(startX + x * clothScript.spacing, -y * clothScript.spacing, 0);
+
+                    Point point = null;
 
                     if (y == 0)
+                    {
+                        point = new Point(v.x, v.y, v.z, clothScript);
                         point.Pin();
+                    }
+                    else
+                    {
+                        v = clothScript.transform.TransformPoint(v);
+
+                        point = new Point(v.x, v.y, v.z, clothScript);
+                    }
+
                     if (x != 0)
                         point.Attach(points[points.Count - 1]);
                     if (y != 0)
                         point.Attach(points[x + (y - 1) * (clothScript.clothX + 1)]);
 
                     points.Add(point);
-                    vectors.Add(Vector3.zero);
+                    vectors.Add(v);
 
                     var uv = new Vector2(x * 1f / clothScript.clothX, y * 1f / clothScript.clothY);
                     uvs.Add(uv);
@@ -81,17 +92,6 @@ namespace TearableCloth
 
         public void Update(float force, float particleSize)
         {
-            var i = clothScript.accuracy;
-
-            while (i-- > 0)
-            {
-                for (var index = 0; index < points.Count; index++)
-                {
-                    var point = points[index];
-                    point.Resolve();
-                }
-            }
-
             var delta = Time.deltaTime * Time.deltaTime;
             for (var index = 0; index < points.Count; index++)
             {
@@ -110,6 +110,17 @@ namespace TearableCloth
             if (clothScript.mesh)
             {
                 clothScript.mesh.RecalculateNormals();
+            }
+
+            var i = clothScript.accuracy;
+
+            while (i-- > 0)
+            {
+                for (var index = 0; index < points.Count; index++)
+                {
+                    var point = points[index];
+                    point.Resolve();
+                }
             }
         }
 

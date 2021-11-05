@@ -10,7 +10,7 @@ public class ClothScript : MonoBehaviour
     public int gravity = -10;
     public int clothY = 28;
     public int clothX = 54;
-    public int spacing = 8;
+    public float spacing = 8;
     public int tearDist = 60;
     public float friction = 0.99f;
     public float bounce = 0.5f;

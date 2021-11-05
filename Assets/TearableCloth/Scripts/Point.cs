@@ -44,7 +44,7 @@ namespace TearableCloth
 
         public override string ToString()
         {
-            return $"({x},{y},{z}) Constraint:{constraints.Count}";
+            return $"({x},{y},{z}) Constraint:{constraints.Count} isPin: {isPinAt}";
         }
 
         private RaycastHit[] hits;
@@ -185,7 +185,7 @@ namespace TearableCloth
             for (var index = 0; index < constraints.Count; index++)
             {
                 var constraint = constraints[index];
-                constraint.Resolve();
+                constraint.ResolveNoBouncy();
             }
         }
 
@@ -255,8 +255,42 @@ namespace TearableCloth
 
             if (dist > clothScript.tearDist) p1.Free(this);
 
-            var mul = diff * 0.15f * (1 - length / dist);
+            var mul = diff * .5f * (-diff);
+            var px = dx * mul;
+            var py = dy * mul;
+            var pz = dz * mul;
 
+            if (!p1.isPinAt)
+            {
+                p1.x += px;
+                p1.y += py;
+                p1.z += pz;
+            }
+
+            if (!p2.isPinAt)
+            {
+                p2.x -= px;
+                p2.y -= py;
+                p2.z -= pz;
+            }
+
+            return this;
+        }
+
+        public Constraint ResolveNoBouncy()
+        {
+            var dx = p1.x - p2.x;
+            var dy = p1.y - p2.y;
+            var dz = p1.z - p2.z;
+            var dist = Mathf.Sqrt(dx * dx + dy * dy + dz * dz);
+
+            if (dist < length) return this;
+
+            var diff = (length - dist) / dist;
+
+            if (dist > clothScript.tearDist) p1.Free(this);
+
+            var mul = diff * .5f * (-diff);
             var px = dx * mul;
             var py = dy * mul;
             var pz = dz * mul;
